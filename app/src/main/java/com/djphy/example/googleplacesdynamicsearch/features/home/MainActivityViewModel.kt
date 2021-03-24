@@ -27,8 +27,13 @@ class MainActivityViewModel(
             publishState(value)
         }
 
+    fun updateNoLocation(){
+        mBaseState = MainActivityViewModelState(noLocation = true,
+            message = "12.913907,77.638119 - bda complex, HSR layout")
+    }
+
     fun getRestaurantsByLatLng(latLng: String) {
-        mBaseState = mBaseState.copy(loading = true)
+        mBaseState = MainActivityViewModelState(loading = true)
         homeRepoI.getLocaleRestaurantList(latLng)
             .subscribe({
                 mBaseState = if (it.success) {

@@ -1,23 +1,27 @@
 package com.djphy.example.googleplacesdynamicsearch.features
 
+import android.location.Location
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import androidx.annotation.CallSuper
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import com.djphy.example.googleplacesdynamicsearch.R
-import com.djphy.example.googleplacesdynamicsearch.TAG
-import com.djphy.example.googleplacesdynamicsearch.collapseSearch
+import com.djphy.example.googleplacesdynamicsearch.*
 import com.djphy.example.googleplacesdynamicsearch.features.home.SearchContract
 import com.miguelcatalan.materialsearchview.MaterialSearchView
+import com.yayandroid.locationmanager.base.LocationBaseActivity
+import com.yayandroid.locationmanager.configuration.Configurations
+import com.yayandroid.locationmanager.configuration.LocationConfiguration
+import com.yayandroid.locationmanager.constants.FailType
+import com.yayandroid.locationmanager.constants.ProcessType
+import de.mateware.snacky.Snacky
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_toolbar.view.*
 
 
-abstract class BaseSearchActivity : AppCompatActivity(),
+abstract class BaseSearchActivity : LocationBaseActivity(),
     SearchContract {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +29,7 @@ abstract class BaseSearchActivity : AppCompatActivity(),
         /* Uncaught exceptions */
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             Log.e(TAG, String.format("Exception in thread : ${t.name}"))
-            Log.e(TAG, ""+e.printStackTrace())
+            Log.e(TAG, "" + e.printStackTrace())
         }
     }
 
@@ -38,6 +42,54 @@ abstract class BaseSearchActivity : AppCompatActivity(),
     private fun initSearch() {
         container_toolbar.edit_search.setOnQueryTextListener(searchQueryTextKeyListener)
         container_toolbar.edit_search.setOnSearchViewListener(onSearchViewListener)
+    }
+
+    protected fun initLocation() {
+        getLocation()
+    }
+
+    override fun getLocationConfiguration(): LocationConfiguration? {
+        return Configurations.defaultConfiguration(
+            "Permission Required",
+            "Would you mind to turn GPS on?"
+        )
+    }
+
+    override fun onLocationChanged(location: Location) {
+        dismissProgress()
+        Log.d(TAG, "latLng: ${location.latitude} & ${location.longitude}")
+    }
+
+    override fun onLocationFailed(@FailType failType: Int) {
+        dismissProgress()
+        when (failType) {
+            FailType.TIMEOUT -> {
+                infoSnacky("Couldn't get location, and timeout!")
+            }
+            FailType.PERMISSION_DENIED -> {
+                toast("Couldn't get location, permission denied")
+                locationPermissionDeniedAction()
+            }
+            FailType.NETWORK_NOT_AVAILABLE -> {
+                infoSnacky("Couldn't get location, No network")
+            }
+            else -> {
+                infoSnacky("Couldn't get location")
+            }
+        }
+    }
+
+    override fun onProcessTypeChanged(processType: Int) {
+        when (processType) {
+            ProcessType.GETTING_LOCATION_FROM_GOOGLE_PLAY_SERVICES,
+            ProcessType.GETTING_LOCATION_FROM_GPS_PROVIDER,
+            ProcessType.GETTING_LOCATION_FROM_NETWORK_PROVIDER -> {
+                infoSnacky("Fetching Location, hang on..")
+            }
+            else -> {
+                //do nothing
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -111,8 +163,19 @@ abstract class BaseSearchActivity : AppCompatActivity(),
     }
 
     @CallSuper
+    override fun onResume() {
+        super.onResume()
+        if (locationManager.isWaitingForLocation
+            && !locationManager.isAnyDialogShowing
+        ) {
+            displayProgress()
+        }
+    }
+
+    @CallSuper
     override fun onPause() {
         container_toolbar.edit_search.collapseSearch()
+        dismissProgress()
         super.onPause()
     }
 

@@ -20,6 +20,7 @@
         <include
             android:id="@+id/container_toolbar"
             layout="@layout/layout_toolbar"
+            android:visibility="@{state.noLocation? View.GONE : View.VISIBLE}"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"
@@ -29,6 +30,7 @@
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:padding="16dp"
             android:text="@{state.message}"
             android:visibility="@{state.failure? View.VISIBLE : View.GONE}"
@@ -36,6 +38,38 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+
+        <TextView
+            android:id="@+id/tvNoLocation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="16dp"
+            android:text="@{state.message}"
+            android:textSize="14sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnTrySample"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Try with Sample LatLng"
+            android:textAllCaps="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvNoLocation" />
+
+        <androidx.constraintlayout.widget.Group
+            android:id="@+id/group_verify"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="@{state.noLocation? View.VISIBLE : View.GONE}"
+            app:constraint_referenced_ids="btnTrySample,tvNoLocation" />
+
 
         <ProgressBar
             android:id="@+id/pBInit"

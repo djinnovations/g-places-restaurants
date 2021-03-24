@@ -1,32 +1,32 @@
 package com.djphy.example.googleplacesdynamicsearch.features.home
 
-import androidx.appcompat.app.AppCompatActivity
+import android.location.Location
 import android.os.Bundle
+import android.util.Log
+import android.view.View
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.djphy.example.googleplacesdynamicsearch.GPlacesRestaurantApp
-import com.djphy.example.googleplacesdynamicsearch.R
-import com.djphy.example.googleplacesdynamicsearch.createFactory
+import com.djphy.example.googleplacesdynamicsearch.*
 import com.djphy.example.googleplacesdynamicsearch.databinding.ActivityMainBinding
 import com.djphy.example.googleplacesdynamicsearch.features.BaseSearchActivity
 import com.djphy.example.googleplacesdynamicsearch.repo.PlacesDataRepoI
-import com.djphy.example.googleplacesdynamicsearch.toast
 import kotlinx.android.synthetic.main.activity_main.*
 import javax.inject.Inject
 
-class MainActivity : BaseSearchActivity() {
+
+class MainActivity : BaseSearchActivity(), View.OnClickListener{
 
     private lateinit var mViewModel: MainActivityViewModel
     private lateinit var mAdapter: RestaurantAdapter
     private lateinit var mDataBinding: ActivityMainBinding
+
     @Inject
     lateinit var homeRepoI: PlacesDataRepoI
 
     //12.913907, 77.638119 - bda complex,hsr layout
-    private val latLng: String = "12.913907,77.638119"
+    private var latLng: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,11 +35,53 @@ class MainActivity : BaseSearchActivity() {
         GPlacesRestaurantApp.dataComponent().inject(this)
         initVm()
         initAdapter()
-        initDataProvider()
+        nextState(MainActivityEventState.HomeLaunchedState)
+    }
+
+    private fun nextState(state: MainActivityEventState) {
+        when (state) {
+            is MainActivityEventState.HomeLaunchedState -> {
+                initLocation()
+            }
+
+            is MainActivityEventState.NoLocationAvailableState -> {
+               mViewModel.updateNoLocation()
+            }
+
+            is MainActivityEventState.InitPlacesState -> {
+                initDataProvider()
+            }
+
+            is MainActivityEventState.SearchRestaurantState ->{
+                latLng?.let {
+                    mViewModel.getRestaurantsBySearch(it, state.searchKey)
+                }
+            }
+
+            is MainActivityEventState.TryWithSampleState -> {
+                resetLatLng()
+                initDataProvider()
+            }
+        }
+    }
+
+    private fun resetLatLng(){
+        latLng = "12.913907,77.638119"
+    }
+
+    override fun onLocationChanged(location: Location) {
+        super.onLocationChanged(location)
+        latLng = "${location.latitude},${location.longitude}"
+        nextState(MainActivityEventState.InitPlacesState)
+    }
+
+    override fun onLocationFailed(failType: Int) {
+        super.onLocationFailed(failType)
+        latLng?: nextState(MainActivityEventState.NoLocationAvailableState)
     }
 
     override fun provideSearch(query: String) {
-        mViewModel.getRestaurantsBySearch(latLng, query)
+        nextState(MainActivityEventState.SearchRestaurantState(query))
     }
 
     override fun onSearchClosed() {
@@ -47,7 +89,9 @@ class MainActivity : BaseSearchActivity() {
     }
 
     private fun initDataProvider() {
-        mViewModel.getRestaurantsByLatLng(latLng)
+        latLng?.let {
+            mViewModel.getRestaurantsByLatLng(it)
+        }
     }
 
     private fun initAdapter() {
@@ -68,6 +112,7 @@ class MainActivity : BaseSearchActivity() {
         ).createFactory()
         mViewModel = ViewModelProvider(this, factory).get(MainActivityViewModel::class.java)
         setObservers()
+        setClickListener()
     }
 
     private fun setObservers() {
@@ -75,6 +120,10 @@ class MainActivity : BaseSearchActivity() {
             mDataBinding.state = it
             updateViews(it)
         })
+    }
+
+    private fun setClickListener(){
+        btnTrySample.setOnClickListener(this)
     }
 
     private fun updateViews(state: MainActivityViewModelState) {
@@ -86,5 +135,21 @@ class MainActivity : BaseSearchActivity() {
                 toast(state.message)
             }
         }
+    }
+
+    override fun onClick(v: View?) {
+        when(v?.id){
+            R.id.btnTrySample ->{
+                nextState(MainActivityEventState.TryWithSampleState)
+            }
+        }
+    }
+
+    override fun dismissProgress() {
+        pBInit.visibility = View.GONE
+    }
+
+    override fun displayProgress() {
+        pBInit.visibility = View.VISIBLE
     }
 }

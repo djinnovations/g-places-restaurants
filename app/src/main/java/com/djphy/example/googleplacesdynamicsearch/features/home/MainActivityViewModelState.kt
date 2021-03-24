@@ -7,6 +7,7 @@ data class MainActivityViewModelState (
     var loading: Boolean = false,
     var failure: Boolean = false,
     var success: Boolean = false,
+    var noLocation: Boolean = false,
     var message: String = "",
     var data: RestaurantList? = null
 )

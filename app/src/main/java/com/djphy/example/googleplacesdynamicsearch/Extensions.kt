@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.miguelcatalan.materialsearchview.MaterialSearchView
+import de.mateware.snacky.Snacky
 
 val Any.TAG: String
     get() {
@@ -32,4 +33,24 @@ fun MaterialSearchView.collapseSearch() {
     if (this.isSearchOpen) {
         this.closeSearch()
     }
+}
+
+ fun AppCompatActivity.locationPermissionDeniedAction(){
+    Snacky.builder().apply {
+        setActivity(this@locationPermissionDeniedAction)
+        setText("Goto app Setting and provide location permission")
+        setTextSize(12f)
+        setMaxLines(1)
+        setDuration(Snacky.LENGTH_INDEFINITE)
+    }.warning().show()
+}
+
+fun AppCompatActivity.infoSnacky(info: String){
+    Snacky.builder().apply {
+        setActivity(this@infoSnacky)
+        setText(info)
+        setTextSize(12f)
+        setMaxLines(1)
+        setDuration(Snacky.LENGTH_SHORT)
+    }.info().show()
 }
